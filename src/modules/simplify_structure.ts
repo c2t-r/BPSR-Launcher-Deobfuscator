@@ -165,9 +165,20 @@ function hasAsyncIteratorUsage(path: NodePath<VariableDeclarator>): boolean {
   return found;
 }
 
-// ============================================================================
-// Transformation Passes
-// ============================================================================
+function normalizeComputedKey(
+  path: NodePath<t.ClassMethod | t.ObjectMethod | t.ClassProperty | t.ObjectProperty>,
+): void {
+  const { key, computed } = path.node;
+
+  if (computed && t.isStringLiteral(key)) {
+    const val = key.value;
+
+    if (isValidIdentifier(val)) {
+      path.node.computed = false;
+      path.node.key = t.identifier(val);
+    }
+  }
+}
 
 /**
  * Pass: Normalize literals
@@ -271,21 +282,6 @@ function restoreObjectShortcuts(ast: ParseResult<File>): void {
       normalizeComputedKey(path);
     },
   });
-}
-
-function normalizeComputedKey(
-  path: NodePath<t.ClassMethod | t.ObjectMethod | t.ClassProperty | t.ObjectProperty>,
-): void {
-  const { key, computed } = path.node;
-
-  if (computed && t.isStringLiteral(key)) {
-    const val = key.value;
-
-    if (isValidIdentifier(val)) {
-      path.node.computed = false;
-      path.node.key = t.identifier(val);
-    }
-  }
 }
 
 /**

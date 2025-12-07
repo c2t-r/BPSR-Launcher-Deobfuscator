@@ -10,6 +10,13 @@ import type { File } from "@babel/types";
 
 const log = createLogger("Module: DecryptStrings");
 
+interface RotationParams {
+  arrayFuncName: string;
+  rotationTarget: number;
+}
+
+type DecodeFunc = (index: number) => string | undefined;
+
 /**
  * Decrypts obfuscated strings by rotating the string array and replacing decoder calls.
  */
@@ -55,13 +62,6 @@ export function run(ast: ParseResult<File>): ParseResult<File> {
   return result;
 }
 
-// --- Helper Functions ---
-
-interface RotationParams {
-  arrayFuncName: string;
-  rotationTarget: number;
-}
-
 function extractRotationParams(code: string): RotationParams {
   const regex = /\}\)\s*\((_0x[a-f0-9]+),\s*(0x[a-f0-9]+)\);/m;
   const match = code.match(regex);
@@ -103,8 +103,6 @@ function extractDecodeOffset(code: string): number {
 
   return parseInt(match[2], 16);
 }
-
-type DecodeFunc = (index: number) => string | undefined;
 
 function buildChecksumFunc(code: string): (decode: DecodeFunc) => number {
   const regex = /const _0x[a-z0-9]{6} =\n*\s+?(-*parseInt[\s\S]+?);/m;

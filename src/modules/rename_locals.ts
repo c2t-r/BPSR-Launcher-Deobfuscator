@@ -8,10 +8,6 @@ import type { File } from "@babel/types";
 
 const log = createLogger("Module: RenameLocals");
 
-function isObfuscated(name: string): boolean {
-  return /^_[0-9a-zA-Z]+$/.test(name) || /^[a-zA-Z]{1,2}$/.test(name);
-}
-
 export function run(ast: ParseResult<File>): ParseResult<File> {
   log.info("Starting...");
 
@@ -91,4 +87,8 @@ export function run(ast: ParseResult<File>): ParseResult<File> {
   log.info("Done!");
 
   return ast;
+}
+
+function isObfuscated(name: string): boolean {
+  return /^_[0-9a-zA-Z]+$/.test(name) || /^[a-zA-Z]{1,2}$/.test(name);
 }
