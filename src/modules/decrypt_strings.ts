@@ -3,23 +3,24 @@ import * as parser from "@babel/parser";
 import traverse from "@babel/traverse";
 import * as t from "@babel/types";
 
+import { createLogger } from "../utils/logger.ts";
+
 import type { ParseResult } from "@babel/parser";
 import type { File } from "@babel/types";
 
+const log = createLogger("Module: DecryptStrings");
+
 /**
- * Stage 1: String Deobfuscation
  * Decrypts obfuscated strings by rotating the string array and replacing decoder calls.
  */
 export function run(ast: ParseResult<File>): ParseResult<File> {
-  console.log("[Stage 1] Starting String Deobfuscation...");
+  log.info("Starting...");
 
   const code = generator(ast).code;
 
   // 1. Extract rotation parameters from IIFE pattern
   const { arrayFuncName, rotationTarget } = extractRotationParams(code);
-  console.log(
-    `[Stage 1] Array Function: ${arrayFuncName}, Rotation Target: 0x${rotationTarget.toString(16)}`,
-  );
+  log.detail(`Array: ${arrayFuncName}, Target: 0x${rotationTarget.toString(16)}`);
 
   // 2. Extract string array from AST
   const stringArray = extractStringArray(ast, arrayFuncName);
@@ -29,23 +30,25 @@ export function run(ast: ParseResult<File>): ParseResult<File> {
 
   // 3. Extract decode offset
   const decodeOffset = extractDecodeOffset(code);
-  console.log(`[Stage 1] Decode Offset: 0x${decodeOffset.toString(16)}`);
+  log.detail(`Decode Offset: 0x${decodeOffset.toString(16)}`);
 
   // 4. Build decode function and checksum calculator
   const decode = (index: number): string | undefined => stringArray[index - decodeOffset];
   const checksumFunc = buildChecksumFunc(code);
 
   // 5. Rotate array until checksum matches
-  console.log("[Stage 1] Rotating string array...");
+  log.detail("Rotating string array...");
   rotateArray(stringArray, rotationTarget, checksumFunc, decode);
 
   // 6. Replace decoder calls with literal strings
-  console.log("[Stage 1] Replacing decoder calls...");
+  log.detail("Replacing decoder calls...");
   replaceDecoderCalls(ast, decode);
 
   // 7. Cleanup unused aliases and obfuscation artifacts
-  console.log("[Stage 1] Cleaning up...");
-  return cleanup(ast, arrayFuncName);
+  log.detail("Cleaning up...");
+  const result = cleanup(ast, arrayFuncName);
+  log.info("Done");
+  return result;
 }
 
 // --- Helper Functions ---
@@ -163,13 +166,13 @@ function cleanup(ast: ParseResult<File>, arrayFuncName: string): ParseResult<Fil
     FunctionDeclaration(path) {
       if (path.node.id?.name === arrayFuncName) {
         path.remove();
-        console.log(`[Stage 1] Removed: ${arrayFuncName}`);
+        log.detail(`Removed: ${arrayFuncName}`);
       }
     },
     VariableDeclarator(path) {
       if (t.isIdentifier(path.node.id) && path.node.id.name === arrayFuncName) {
         path.remove();
-        console.log(`[Stage 1] Removed (var): ${arrayFuncName}`);
+        log.detail(`Removed (var): ${arrayFuncName}`);
       }
     },
     // Remove checksum rotation IIFE: (function(...) { ... })(_0xArray, 0xTarget);
@@ -184,7 +187,7 @@ function cleanup(ast: ParseResult<File>, arrayFuncName: string): ParseResult<Fil
           t.isNumericLiteral(args[1])
         ) {
           path.remove();
-          console.log(`[Stage 1] Removed checksum IIFE`);
+          log.detail("Removed checksum IIFE");
         }
       }
     },

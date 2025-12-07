@@ -1,7 +1,11 @@
 import traverse from "@babel/traverse";
 
+import { createLogger } from "../utils/logger.ts";
+
 import type { ParseResult } from "@babel/parser";
 import type { File } from "@babel/types";
+
+const log = createLogger("Module: RenameVariables");
 
 interface RenameEntry {
   from: string;
@@ -45,11 +49,11 @@ function detectRequireRenames(ast: ParseResult<File>): RenameEntry[] {
 }
 
 export function run(ast: ParseResult<File>): ParseResult<File> {
-  console.log("[Stage 2] Starting Symbol Renaming...");
+  log.info("Starting...");
 
   // First, detect require() calls and rename them dynamically
   const requireRenames = detectRequireRenames(ast);
-  console.log(`Detected ${requireRenames.length} require() calls for dynamic renaming`);
+  log.detail(`Detected ${requireRenames.length} require() calls`);
 
   let renamedCount = 0;
   traverse(ast, {
@@ -59,7 +63,7 @@ export function run(ast: ParseResult<File>): ParseResult<File> {
       // Apply dynamic require renames first
       for (const { from: oldName, to: newName } of requireRenames) {
         if (scope.hasBinding(oldName)) {
-          console.log(`Renaming ${oldName} -> ${newName} (require)`);
+          log.detail(`${oldName} -> ${newName}`);
           scope.rename(oldName, newName);
           renamedCount++;
         }
@@ -67,6 +71,6 @@ export function run(ast: ParseResult<File>): ParseResult<File> {
     },
   });
 
-  console.log(`Renamed ${renamedCount} symbols.`);
+  log.info(`Done (${renamedCount} symbols)`);
   return ast;
 }

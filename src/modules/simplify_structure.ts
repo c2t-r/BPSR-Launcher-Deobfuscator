@@ -1,6 +1,8 @@
 import traverse from "@babel/traverse";
 import * as t from "@babel/types";
 
+import { createLogger } from "../utils/logger.ts";
+
 import type { ParseResult } from "@babel/parser";
 import type { NodePath } from "@babel/traverse";
 import type {
@@ -11,16 +13,19 @@ import type {
   VariableDeclarator,
 } from "@babel/types";
 
+const log = createLogger("Module: SimplifyStructure");
+
 const validIdentifierRegex = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/;
 
 export function run(ast: ParseResult<File>): ParseResult<File> {
-  console.log(`[Stage 3/Clean] Starting Structure Deobfuscation...`);
+  log.info("Starting...");
 
   normalizeLiterals(ast);
   restoreObjectShortcuts(ast);
   cleanSymbolPolyfills(ast);
   simplifyHelperFunctions(ast);
 
+  log.info("Done");
   return ast;
 }
 
@@ -155,7 +160,7 @@ function hasAsyncIteratorUsage(path: NodePath<VariableDeclarator>): boolean {
  * e.g., !0x0 -> true, !0x1 -> false, void 0x0 -> undefined
  */
 function normalizeLiterals(ast: ParseResult<File>): void {
-  console.log("Normalizing literals...");
+  log.detail("Normalizing literals...");
   let boolCount = 0;
   let voidCount = 0;
 
@@ -181,7 +186,7 @@ function normalizeLiterals(ast: ParseResult<File>): void {
     },
   });
 
-  console.log(`Normalized ${boolCount} boolean literals, ${voidCount} void expressions`);
+  log.detail(`Normalized ${boolCount} booleans, ${voidCount} void expressions`);
 }
 
 /**
@@ -189,7 +194,7 @@ function normalizeLiterals(ast: ParseResult<File>): void {
  * e.g., var dp = Object["defineProperty"] -> replace dp with Object.defineProperty
  */
 function restoreObjectShortcuts(ast: ParseResult<File>): void {
-  console.log("Restoring Object shortcuts...");
+  log.detail("Restoring Object shortcuts...");
 
   traverse(ast, {
     VariableDeclarator(path) {
@@ -269,7 +274,7 @@ function normalizeComputedKey(
  * e.g., dn = (e, t) => (t = Symbol[e]) ? t : Symbol.for("Symbol." + e)
  */
 function cleanSymbolPolyfills(ast: ParseResult<File>): void {
-  console.log("Cleaning Symbol polyfills...");
+  log.detail("Cleaning Symbol polyfills...");
 
   traverse(ast, {
     VariableDeclarator(path) {
@@ -381,7 +386,7 @@ function replaceObjectAssignPolyfills(path: NodePath<VariableDeclarator>): boole
   });
 
   if (result) {
-    console.log(`Replaced Object.assign polyfill: ${id.name}`);
+    log.detail(`Replaced Object.assign polyfill: ${id.name}`);
   }
   return result;
 }
@@ -397,7 +402,7 @@ function renameAsyncIteratorHelpers(path: NodePath<VariableDeclarator>): boolean
   if (!t.isConditionalExpression(init.body)) return false;
   if (!hasAsyncIteratorUsage(path)) return false;
 
-  console.log(`Renamed Async Iterator helper: ${id.name} -> getAsyncIterator`);
+  log.detail(`Async Iterator: ${id.name} -> getAsyncIterator`);
   path.scope.rename(id.name, "getAsyncIterator");
   return true;
 }
@@ -406,7 +411,7 @@ function renameAsyncIteratorHelpers(path: NodePath<VariableDeclarator>): boolean
  * Pass: Simplify all helper functions
  */
 function simplifyHelperFunctions(ast: ParseResult<File>): void {
-  console.log("Simplifying helper functions...");
+  log.detail("Simplifying helper functions...");
 
   traverse(ast, {
     VariableDeclarator(path) {

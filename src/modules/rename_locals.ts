@@ -1,15 +1,19 @@
 import traverse from "@babel/traverse";
 import * as t from "@babel/types";
 
+import { createLogger } from "../utils/logger.ts";
+
 import type { ParseResult } from "@babel/parser";
 import type { File } from "@babel/types";
+
+const log = createLogger("Module: RenameLocals");
 
 function isObfuscated(name: string): boolean {
   return /^_[0-9a-zA-Z]+$/.test(name) || /^[a-zA-Z]{1,2}$/.test(name);
 }
 
 export function run(ast: ParseResult<File>): ParseResult<File> {
-  console.log("[Stage 4] Starting Local Variable Renaming...");
+  log.info("Starting...");
 
   traverse(ast, {
     // 1. Rename Function Arguments
@@ -77,5 +81,6 @@ export function run(ast: ParseResult<File>): ParseResult<File> {
     },
   });
 
+  log.info("Done");
   return ast;
 }

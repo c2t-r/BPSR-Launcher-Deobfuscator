@@ -11,7 +11,6 @@ export function readAst(filePath: string): {
   ast: ParseResult<File>;
   code: string;
 } {
-  console.log(`Reading ${filePath}...`);
   const code = fs.readFileSync(filePath, "utf8");
   return {
     ast: parser.parse(code, {
