@@ -25,34 +25,27 @@ export function run(ast: ParseResult<File>): ParseResult<File> {
 
   const code = generator(ast).code;
 
-  // 1. Extract rotation parameters from IIFE pattern
   const { arrayFuncName, rotationTarget } = extractRotationParams(code);
   log.detail(`Array: ${arrayFuncName}, Target: 0x${rotationTarget.toString(16)}`);
 
-  // 2. Extract string array from AST
   const stringArray = extractStringArray(ast, arrayFuncName);
 
   if (stringArray.length === 0) {
     throw new Error("Failed to extract string array");
   }
 
-  // 3. Extract decode offset
   const decodeOffset = extractDecodeOffset(code);
   log.detail(`Decode Offset: 0x${decodeOffset.toString(16)}`);
 
-  // 4. Build decode function and checksum calculator
   const decode = (index: number): string | undefined => stringArray[index - decodeOffset];
   const checksumFunc = buildChecksumFunc(code);
 
-  // 5. Rotate array until checksum matches
   log.detail("Rotating string array...");
   rotateArray(stringArray, rotationTarget, checksumFunc, decode);
 
-  // 6. Replace decoder calls with literal strings
   log.detail("Replacing decoder calls...");
   replaceDecoderCalls(ast, decode);
 
-  // 7. Cleanup unused aliases and obfuscation artifacts
   log.detail("Cleaning up...");
 
   const result = cleanup(ast, arrayFuncName);
@@ -62,6 +55,7 @@ export function run(ast: ParseResult<File>): ParseResult<File> {
   return result;
 }
 
+/** Extract array function name and rotation target from IIFE */
 function extractRotationParams(code: string): RotationParams {
   const regex = /\}\)\s*\((_0x[a-f0-9]+),\s*(0x[a-f0-9]+)\);/m;
   const match = code.match(regex);
@@ -74,6 +68,7 @@ function extractRotationParams(code: string): RotationParams {
   };
 }
 
+/** Extract the string array from the obfuscated code */
 function extractStringArray(ast: ParseResult<File>, arrayFuncName: string): string[] {
   let stringArray: string[] = [];
   traverse(ast, {
@@ -95,6 +90,7 @@ function extractStringArray(ast: ParseResult<File>, arrayFuncName: string): stri
   return stringArray;
 }
 
+/** Extract the decode offset used for array indexing */
 function extractDecodeOffset(code: string): number {
   const regex = /(_0x[a-f0-9]{1,6})\s*=\s*\1\s*-\s*(0x[a-f0-9]{1,9});/i;
   const match = code.match(regex);
@@ -104,6 +100,7 @@ function extractDecodeOffset(code: string): number {
   return parseInt(match[2], 16);
 }
 
+/** Build dynamic checksum function from obfuscated code */
 function buildChecksumFunc(code: string): (decode: DecodeFunc) => number {
   const regex = /const _0x[a-z0-9]{6} =\n*\s+?(-*parseInt[\s\S]+?);/m;
   const match = code.match(regex);
@@ -117,6 +114,7 @@ function buildChecksumFunc(code: string): (decode: DecodeFunc) => number {
   return new Function("decode", "return " + logic + ";") as (decode: DecodeFunc) => number;
 }
 
+/** Rotate array until checksum matches target */
 function rotateArray(
   array: string[],
   target: number,
@@ -133,6 +131,7 @@ function rotateArray(
   }
 }
 
+/** Replace all decoder calls with their decoded string values */
 function replaceDecoderCalls(ast: ParseResult<File>, decode: DecodeFunc): void {
   traverse(ast, {
     CallExpression(path) {
@@ -151,6 +150,7 @@ function replaceDecoderCalls(ast: ParseResult<File>, decode: DecodeFunc): void {
   });
 }
 
+/** Remove unused aliases and obfuscation artifacts */
 function cleanup(ast: ParseResult<File>, arrayFuncName: string): ParseResult<File> {
   let currentCode = generator(ast).code;
 

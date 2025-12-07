@@ -12,7 +12,7 @@ export function run(ast: ParseResult<File>): ParseResult<File> {
   log.info("Starting...");
 
   traverse(ast, {
-    // 1. Rename Function Arguments
+    // Rename function arguments
     Function(path) {
       let argIndex = 0;
       path.node.params.forEach((param) => {
@@ -26,7 +26,7 @@ export function run(ast: ParseResult<File>): ParseResult<File> {
       });
     },
 
-    // 2. Rename Catch Parameters
+    // Rename catch parameters
     CatchClause(path) {
       const param = path.node.param;
 
@@ -38,7 +38,7 @@ export function run(ast: ParseResult<File>): ParseResult<File> {
       }
     },
 
-    // 3. Rename Loop Variables
+    // Rename loop variables
     ForStatement(path) {
       const init = path.node.init;
 
@@ -89,6 +89,7 @@ export function run(ast: ParseResult<File>): ParseResult<File> {
   return ast;
 }
 
+/** Check if a variable name looks obfuscated */
 function isObfuscated(name: string): boolean {
-  return /^_[0-9a-zA-Z]+$/.test(name) || /^[a-zA-Z]{1,2}$/.test(name);
+  return /^_0x[0-9a-z]{6}$/.test(name) || /^[a-zA-Z]{1,2}$/.test(name);
 }

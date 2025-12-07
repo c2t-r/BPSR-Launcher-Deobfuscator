@@ -15,7 +15,7 @@ interface RenameEntry {
 export function run(ast: ParseResult<File>): ParseResult<File> {
   log.info("Starting...");
 
-  // First, detect require() calls and rename them dynamically
+  // Detect require() calls and rename them dynamically
   const requireRenames = detectRequireRenames(ast);
   log.detail(`Detected ${requireRenames.length} require() calls`);
 
@@ -40,9 +40,7 @@ export function run(ast: ParseResult<File>): ParseResult<File> {
   return ast;
 }
 
-/**
- * Dynamically detect require() calls and rename variables to module_XXX format.
- */
+/** Detect require() calls and create rename entries for module_XXX format */
 function detectRequireRenames(ast: ParseResult<File>): RenameEntry[] {
   const dynamicRenames: RenameEntry[] = [];
 
@@ -62,6 +60,7 @@ function detectRequireRenames(ast: ParseResult<File>): RenameEntry[] {
         ) {
           const varName = path.node.id.name;
           const moduleName = init.arguments[0].value;
+
           // Convert module name to valid identifier: electron-updater -> electron_updater
           const safeName = moduleName.replace(/[-/@.]/g, "_");
           const newName = `module_${safeName}`;
@@ -72,7 +71,7 @@ function detectRequireRenames(ast: ParseResult<File>): RenameEntry[] {
     },
     undefined,
     { noScope: true },
-  ); // noScope for faster traversal (detection only)
+  );
 
   return dynamicRenames;
 }

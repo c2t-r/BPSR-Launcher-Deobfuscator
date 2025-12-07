@@ -30,9 +30,7 @@ export function run(ast: ParseResult<File>): ParseResult<File> {
   return ast;
 }
 
-/**
- * Check if a node is Object["prop"] or Object.prop
- */
+/** Check if node is Object["prop"] or Object.prop */
 function isObjectMember(node: Node, propName: string): boolean {
   if (!t.isMemberExpression(node)) return false;
 
@@ -49,9 +47,7 @@ function isObjectMember(node: Node, propName: string): boolean {
   return false;
 }
 
-/**
- * Check if a node is Object.prototype["prop"] or Object.prototype.prop
- */
+/** Check if node is Object.prototype["prop"] or Object.prototype.prop */
 function isObjectPrototypeMember(node: Node): string | null {
   if (!t.isMemberExpression(node)) return null;
 
@@ -74,16 +70,12 @@ function isObjectPrototypeMember(node: Node): string | null {
   return null;
 }
 
-/**
- * Check if a string is a valid JavaScript identifier
- */
+/** Check if a string is a valid JS identifier */
 function isValidIdentifier(str: string): boolean {
   return validIdentifierRegex.test(str);
 }
 
-/**
- * Replace all references of a binding and remove the declarator
- */
+/** Replace all references of a binding and remove the declarator */
 function replaceBindingReferences(
   path: NodePath<VariableDeclarator>,
   idName: string,
@@ -101,9 +93,7 @@ function replaceBindingReferences(
   return true;
 }
 
-/**
- * Create a normalized member assignment from call arguments
- */
+/** Create a normalized member assignment from call arguments */
 function createMemberAssignment(
   args: (Expression | t.SpreadElement | t.ArgumentPlaceholder)[],
 ): AssignmentExpression {
@@ -124,9 +114,7 @@ function createMemberAssignment(
   return assignment;
 }
 
-/**
- * Check if a path matches Object.assign polyfill pattern
- */
+/** Check if a path matches Object.assign polyfill pattern */
 function matchesAssignPolyfill(path: NodePath): boolean {
   let hasForIn = false;
   let hasHasOwn = false;
@@ -146,9 +134,7 @@ function matchesAssignPolyfill(path: NodePath): boolean {
   return hasForIn && hasHasOwn;
 }
 
-/**
- * Check if a path contains Symbol.asyncIterator usage
- */
+/** Check if a path contains Symbol.asyncIterator usage */
 function hasAsyncIteratorUsage(path: NodePath<VariableDeclarator>): boolean {
   let found = false;
   path.traverse({
@@ -165,6 +151,7 @@ function hasAsyncIteratorUsage(path: NodePath<VariableDeclarator>): boolean {
   return found;
 }
 
+/** Normalize computed keys to identifiers when valid */
 function normalizeComputedKey(
   path: NodePath<t.ClassMethod | t.ObjectMethod | t.ClassProperty | t.ObjectProperty>,
 ): void {
@@ -180,10 +167,7 @@ function normalizeComputedKey(
   }
 }
 
-/**
- * Pass: Normalize literals
- * e.g., !0x0 -> true, !0x1 -> false, void 0x0 -> undefined
- */
+/** Normalize literals: !0 -> true, !1 -> false, void 0 -> undefined */
 function normalizeLiterals(ast: ParseResult<File>): void {
   log.detail("Normalizing literals...");
   let boolCount = 0;
@@ -214,10 +198,7 @@ function normalizeLiterals(ast: ParseResult<File>): void {
   log.detail(`Normalized ${boolCount} booleans, ${voidCount} void expressions`);
 }
 
-/**
- * Pass: Restore Object method shortcuts
- * e.g., var dp = Object["defineProperty"] -> replace dp with Object.defineProperty
- */
+/** Restore Object method shortcuts: var dp = Object["defineProperty"] -> Object.defineProperty */
 function restoreObjectShortcuts(ast: ParseResult<File>): void {
   log.detail("Restoring Object shortcuts...");
 
@@ -284,10 +265,7 @@ function restoreObjectShortcuts(ast: ParseResult<File>): void {
   });
 }
 
-/**
- * Pass: Clean Symbol polyfills
- * e.g., dn = (e, t) => (t = Symbol[e]) ? t : Symbol.for("Symbol." + e)
- */
+/** Clean Symbol polyfills: dn("asyncIterator") -> Symbol.asyncIterator */
 function cleanSymbolPolyfills(ast: ParseResult<File>): void {
   log.detail("Cleaning Symbol polyfills...");
 
@@ -333,10 +311,7 @@ function cleanSymbolPolyfills(ast: ParseResult<File>): void {
   });
 }
 
-/**
- * Pass: Simplify defineProperty helpers
- * Pattern: (obj, key, val) => ... Object.defineProperty ...
- */
+/** Simplify defineProperty helpers: (obj, key, val) => Object.defineProperty(...) */
 function simplifyDefinePropertyHelpers(path: NodePath<VariableDeclarator>): boolean {
   const { id, init } = path.node;
 
@@ -368,10 +343,7 @@ function simplifyDefinePropertyHelpers(path: NodePath<VariableDeclarator>): bool
   });
 }
 
-/**
- * Pass: Simplify simple assignment helpers
- * Pattern: (a, b, c) => a[...b...] = c
- */
+/** Simplify assignment helpers: (a, b, c) => a[b] = c */
 function simplifyAssignmentHelpers(path: NodePath<VariableDeclarator>): boolean {
   const { id, init } = path.node;
 
@@ -393,9 +365,7 @@ function simplifyAssignmentHelpers(path: NodePath<VariableDeclarator>): boolean 
   });
 }
 
-/**
- * Pass: Replace Object.assign polyfills
- */
+/** Replace Object.assign polyfills with native Object.assign */
 function replaceObjectAssignPolyfills(path: NodePath<VariableDeclarator>): boolean {
   const { id, init } = path.node;
 
@@ -426,9 +396,7 @@ function replaceObjectAssignPolyfills(path: NodePath<VariableDeclarator>): boole
   return result;
 }
 
-/**
- * Pass: Rename async iterator helpers
- */
+/** Rename async iterator helpers to readable names */
 function renameAsyncIteratorHelpers(path: NodePath<VariableDeclarator>): boolean {
   const { id, init } = path.node;
 
@@ -446,9 +414,7 @@ function renameAsyncIteratorHelpers(path: NodePath<VariableDeclarator>): boolean
   return true;
 }
 
-/**
- * Pass: Simplify all helper functions
- */
+/** Entry point: simplify all helper functions */
 function simplifyHelperFunctions(ast: ParseResult<File>): void {
   log.detail("Simplifying helper functions...");
 
