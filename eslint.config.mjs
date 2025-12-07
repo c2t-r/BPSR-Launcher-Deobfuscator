@@ -1,22 +1,17 @@
 import eslint from "@eslint/js";
-import { defineConfig } from "eslint/config";
 import importX from "eslint-plugin-import-x";
-import globals from "globals";
+import tseslint from "typescript-eslint";
 
 
-export default defineConfig(
+export default tseslint.config(
   eslint.configs.recommended,
   {
-    files: ["src/**/*.js"],
+    files: ["src/**/*.ts"],
+    extends: [...tseslint.configs.recommendedTypeChecked],
     languageOptions: {
-      ecmaVersion: "latest",
-      sourceType: 'script',
       parserOptions: {
         projectService: true,
         tsconfigRootDir: import.meta.dirname,
-      },
-      globals: {
-        ...globals.node
       }
     },
     plugins: {
@@ -32,6 +27,22 @@ export default defineConfig(
           alphabetize: { order: "asc" },
           groups: ["builtin", "external", "internal", ["parent", "sibling", "index"], "type"],
           "newlines-between": "always",
+        },
+      ],
+
+      "@typescript-eslint/naming-convention": [
+        "error",
+        {
+          selector: "class",
+          format: ["StrictPascalCase"],
+        },
+        {
+          selector: "property",
+          format: ["StrictPascalCase", "strictCamelCase"],
+        },
+        {
+          selector: ["variable", "parameter", "class", "property"],
+          format: ["strictCamelCase"],
         },
       ],
     },
