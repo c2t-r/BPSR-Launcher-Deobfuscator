@@ -2,6 +2,7 @@
   "name": "bpsr_launcher_deobfuscator",
   "version": "1.0.0",
   "description": "deobfuscate bpsr_launcher",
+  "author": "c2t-r",
   "main": "src/index.ts",
   "scripts": {
     "lint": "bun x eslint .",
@@ -9,8 +10,6 @@
     "check": "bun x tsc --noEmit",
     "deobfuscate": "bun src/index.ts"
   },
-  "author": "c2t-r",
-  "license": "MIT",
   "devDependencies": {
     "@babel/core": "^7.28.5",
     "@babel/generator": "^7.28.5",

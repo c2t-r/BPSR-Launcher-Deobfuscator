@@ -1,6 +1,6 @@
 # BPSR Launcher Deobfuscator
 
-A tool for deobfuscating the BPSR launcher's obfuscated JavaScript code.
+A tool for deobfuscating the BPSR launcher's compiled electron code.
 
 ## Features
 
@@ -13,7 +13,7 @@ This tool deobfuscates `resources/app/dist/electron/main.js` through a 4-stage p
 
 ## Requirements
 
-- Bun
+- Bun (not for API, for runtime)
 
 ## Installation
 
