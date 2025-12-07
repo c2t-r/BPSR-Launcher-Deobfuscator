@@ -1,4 +1,5 @@
 const traverse = require('@babel/traverse').default;
+
 const { readAst, writeAst } = require('../utils/io');
 
 /**

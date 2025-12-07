@@ -1,9 +1,9 @@
 const path = require('path');
+
 const decryptStrings = require('./modules/decrypt_strings');
+const renameLocals = require('./modules/rename_locals');
 const renameVariables = require('./modules/rename_variables');
 const simplifyStructure = require('./modules/simplify_structure');
-const renameLocals = require('./modules/rename_locals');
-
 const { readAst, writeAst } = require('./utils/io');
 
 // Paths
