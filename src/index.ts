@@ -10,10 +10,12 @@ const log = createLogger("Deobfuscator");
 function parseArgs(): { inputPath: string; outputPath: string } {
   const inputPath = process.argv[2];
   const outputPath = process.argv[3];
+
   if (!inputPath || !outputPath) {
     console.error("Usage: bun run deobfuscate <input.js> <output.js>");
     process.exit(1);
   }
+
   return { inputPath, outputPath };
 }
 

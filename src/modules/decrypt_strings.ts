@@ -24,6 +24,7 @@ export function run(ast: ParseResult<File>): ParseResult<File> {
 
   // 2. Extract string array from AST
   const stringArray = extractStringArray(ast, arrayFuncName);
+
   if (stringArray.length === 0) {
     throw new Error("Failed to extract string array");
   }
@@ -46,8 +47,11 @@ export function run(ast: ParseResult<File>): ParseResult<File> {
 
   // 7. Cleanup unused aliases and obfuscation artifacts
   log.detail("Cleaning up...");
+
   const result = cleanup(ast, arrayFuncName);
-  log.info("Done");
+
+  log.info("Done!");
+
   return result;
 }
 
@@ -61,7 +65,9 @@ interface RotationParams {
 function extractRotationParams(code: string): RotationParams {
   const regex = /\}\)\s*\((_0x[a-f0-9]+),\s*(0x[a-f0-9]+)\);/m;
   const match = code.match(regex);
+
   if (!match) throw new Error("Failed to find rotation IIFE signature");
+
   return {
     arrayFuncName: match[1]!,
     rotationTarget: parseInt(match[2]!, 16),
@@ -74,8 +80,10 @@ function extractStringArray(ast: ParseResult<File>, arrayFuncName: string): stri
     FunctionDeclaration(path) {
       if (path.node.id?.name === arrayFuncName) {
         const varDecl = path.node.body.body.find((s) => t.isVariableDeclaration(s));
+
         if (varDecl && t.isVariableDeclaration(varDecl)) {
           const init = varDecl.declarations[0]?.init;
+
           if (t.isArrayExpression(init)) {
             stringArray = init.elements.map((el) => (t.isStringLiteral(el) ? el.value : ""));
           }
@@ -83,13 +91,16 @@ function extractStringArray(ast: ParseResult<File>, arrayFuncName: string): stri
       }
     },
   });
+
   return stringArray;
 }
 
 function extractDecodeOffset(code: string): number {
   const regex = /(_0x[a-f0-9]{1,6})\s*=\s*\1\s*-\s*(0x[a-f0-9]{1,9});/i;
   const match = code.match(regex);
+
   if (!match?.[2]) throw new Error("Failed to detect decode offset");
+
   return parseInt(match[2], 16);
 }
 
@@ -98,9 +109,11 @@ type DecodeFunc = (index: number) => string | undefined;
 function buildChecksumFunc(code: string): (decode: DecodeFunc) => number {
   const regex = /const _0x[a-z0-9]{6} =\n*\s+?(-*parseInt[\s\S]+?);/m;
   const match = code.match(regex);
+
   if (!match) throw new Error("Failed to extract checksum logic");
 
   const logic = match[1]!.trim().replaceAll(/_0x[a-z0-9]{6}/g, "decode");
+
   // Dynamically construct the checksum function from obfuscated code
   // eslint-disable-next-line @typescript-eslint/no-implied-eval
   return new Function("decode", "return " + logic + ";") as (decode: DecodeFunc) => number;
@@ -126,10 +139,12 @@ function replaceDecoderCalls(ast: ParseResult<File>, decode: DecodeFunc): void {
   traverse(ast, {
     CallExpression(path) {
       const { arguments: args } = path.node;
+
       if (args.length === 1 && (t.isNumericLiteral(args[0]) || t.isStringLiteral(args[0]))) {
         const arg = args[0];
         const value = t.isNumericLiteral(arg) ? arg.value : Number(arg.value);
         const decoded = decode(value);
+
         if (typeof decoded === "string") {
           path.replaceWith(t.stringLiteral(decoded));
         }
@@ -150,6 +165,7 @@ function cleanup(ast: ParseResult<File>, arrayFuncName: string): ParseResult<Fil
       VariableDeclarator(path) {
         if (t.isIdentifier(path.node.id) && t.isIdentifier(path.node.init)) {
           const binding = path.scope.getBinding(path.node.id.name);
+
           if (binding?.referencePaths.length === 0) {
             path.remove();
             removed++;
@@ -157,6 +173,7 @@ function cleanup(ast: ParseResult<File>, arrayFuncName: string): ParseResult<Fil
         }
       },
     });
+
     if (removed > 0) currentCode = generator(tempAst).code;
   } while (removed > 0);
 
@@ -178,8 +195,10 @@ function cleanup(ast: ParseResult<File>, arrayFuncName: string): ParseResult<Fil
     // Remove checksum rotation IIFE: (function(...) { ... })(_0xArray, 0xTarget);
     ExpressionStatement(path) {
       const expr = path.node.expression;
+
       if (t.isCallExpression(expr) && t.isFunctionExpression(expr.callee)) {
         const args = expr.arguments;
+
         if (
           args.length === 2 &&
           t.isIdentifier(args[0]) &&

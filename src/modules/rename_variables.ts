@@ -12,42 +12,6 @@ interface RenameEntry {
   to: string;
 }
 
-/**
- * Dynamically detect require() calls and rename variables to module_XXX format.
- */
-function detectRequireRenames(ast: ParseResult<File>): RenameEntry[] {
-  const dynamicRenames: RenameEntry[] = [];
-
-  traverse(
-    ast,
-    {
-      VariableDeclarator(path) {
-        const init = path.node.init;
-        // Check: var x = require("module-name")
-        if (
-          init?.type === "CallExpression" &&
-          init.callee?.type === "Identifier" &&
-          init.callee.name === "require" &&
-          init.arguments[0]?.type === "StringLiteral" &&
-          path.node.id?.type === "Identifier"
-        ) {
-          const varName = path.node.id.name;
-          const moduleName = init.arguments[0].value;
-          // Convert module name to valid identifier: electron-updater -> electron_updater
-          const safeName = moduleName.replace(/[-/@.]/g, "_");
-          const newName = `module_${safeName}`;
-
-          dynamicRenames.push({ from: varName, to: newName });
-        }
-      },
-    },
-    undefined,
-    { noScope: true },
-  ); // noScope for faster traversal (detection only)
-
-  return dynamicRenames;
-}
-
 export function run(ast: ParseResult<File>): ParseResult<File> {
   log.info("Starting...");
 
@@ -72,5 +36,43 @@ export function run(ast: ParseResult<File>): ParseResult<File> {
   });
 
   log.info(`Done (${renamedCount} symbols)`);
+
   return ast;
+}
+
+/**
+ * Dynamically detect require() calls and rename variables to module_XXX format.
+ */
+function detectRequireRenames(ast: ParseResult<File>): RenameEntry[] {
+  const dynamicRenames: RenameEntry[] = [];
+
+  traverse(
+    ast,
+    {
+      VariableDeclarator(path) {
+        const init = path.node.init;
+
+        // Check: var x = require("module-name")
+        if (
+          init?.type === "CallExpression" &&
+          init.callee?.type === "Identifier" &&
+          init.callee.name === "require" &&
+          init.arguments[0]?.type === "StringLiteral" &&
+          path.node.id?.type === "Identifier"
+        ) {
+          const varName = path.node.id.name;
+          const moduleName = init.arguments[0].value;
+          // Convert module name to valid identifier: electron-updater -> electron_updater
+          const safeName = moduleName.replace(/[-/@.]/g, "_");
+          const newName = `module_${safeName}`;
+
+          dynamicRenames.push({ from: varName, to: newName });
+        }
+      },
+    },
+    undefined,
+    { noScope: true },
+  ); // noScope for faster traversal (detection only)
+
+  return dynamicRenames;
 }

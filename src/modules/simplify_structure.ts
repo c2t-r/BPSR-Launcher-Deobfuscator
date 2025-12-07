@@ -25,7 +25,8 @@ export function run(ast: ParseResult<File>): ParseResult<File> {
   cleanSymbolPolyfills(ast);
   simplifyHelperFunctions(ast);
 
-  log.info("Done");
+  log.info("Done!");
+
   return ast;
 }
 
@@ -34,14 +35,17 @@ export function run(ast: ParseResult<File>): ParseResult<File> {
  */
 function isObjectMember(node: Node, propName: string): boolean {
   if (!t.isMemberExpression(node)) return false;
+
   if (!t.isIdentifier(node.object, { name: "Object" })) return false;
 
   if (t.isStringLiteral(node.property)) {
     return node.property.value === propName;
   }
+
   if (t.isIdentifier(node.property) && !node.computed) {
     return node.property.name === propName;
   }
+
   return false;
 }
 
@@ -50,18 +54,23 @@ function isObjectMember(node: Node, propName: string): boolean {
  */
 function isObjectPrototypeMember(node: Node): string | null {
   if (!t.isMemberExpression(node)) return null;
+
   if (!t.isMemberExpression(node.object)) return null;
+
   if (!t.isIdentifier(node.object.object, { name: "Object" })) return null;
 
   const protoKey = node.object.property;
   const isProto =
     t.isStringLiteral(protoKey, { value: "prototype" }) ||
     t.isIdentifier(protoKey, { name: "prototype" });
+
   if (!isProto) return null;
 
   // Extract property name
   if (t.isStringLiteral(node.property)) return node.property.value;
+
   if (t.isIdentifier(node.property) && !node.computed) return node.property.name;
+
   return null;
 }
 
@@ -81,12 +90,14 @@ function replaceBindingReferences(
   replacer: (refPath: NodePath) => void,
 ): boolean {
   const binding = path.scope.getBinding(idName);
+
   if (!binding) return false;
 
   binding.referencePaths.forEach((refPath) => {
     replacer(refPath);
   });
   path.remove();
+
   return true;
 }
 
@@ -109,6 +120,7 @@ function createMemberAssignment(
   }
 
   const assignment = t.assignmentExpression("=", member, val || t.identifier("undefined"));
+
   return assignment;
 }
 
@@ -130,6 +142,7 @@ function matchesAssignPolyfill(path: NodePath): boolean {
       if (p.node.value === "hasOwnProperty") hasHasOwn = true;
     },
   });
+
   return hasForIn && hasHasOwn;
 }
 
@@ -148,6 +161,7 @@ function hasAsyncIteratorUsage(path: NodePath<VariableDeclarator>): boolean {
       }
     },
   });
+
   return found;
 }
 
@@ -199,6 +213,7 @@ function restoreObjectShortcuts(ast: ParseResult<File>): void {
   traverse(ast, {
     VariableDeclarator(path) {
       const { id, init } = path.node;
+
       if (!t.isIdentifier(id) || !init) return;
 
       let replacement: t.MemberExpression | null = null;
@@ -214,6 +229,7 @@ function restoreObjectShortcuts(ast: ParseResult<File>): void {
       } else {
         // Object.prototype.hasOwnProperty / Object.prototype.propertyIsEnumerable
         const propName = isObjectPrototypeMember(init);
+
         if (propName === "hasOwnProperty" || propName === "propertyIsEnumerable") {
           replacement = t.memberExpression(
             t.memberExpression(t.identifier("Object"), t.identifier("prototype")),
@@ -233,6 +249,7 @@ function restoreObjectShortcuts(ast: ParseResult<File>): void {
     MemberExpression(path) {
       if (t.isStringLiteral(path.node.property)) {
         const val = path.node.property.value;
+
         if (isValidIdentifier(val)) {
           path.node.computed = false;
           path.node.property = t.identifier(val);
@@ -260,8 +277,10 @@ function normalizeComputedKey(
   path: NodePath<t.ClassMethod | t.ObjectMethod | t.ClassProperty | t.ObjectProperty>,
 ): void {
   const { key, computed } = path.node;
+
   if (computed && t.isStringLiteral(key)) {
     const val = key.value;
+
     if (isValidIdentifier(val)) {
       path.node.computed = false;
       path.node.key = t.identifier(val);
@@ -279,26 +298,34 @@ function cleanSymbolPolyfills(ast: ParseResult<File>): void {
   traverse(ast, {
     VariableDeclarator(path) {
       const { id, init } = path.node;
+
       if (!t.isIdentifier(id) || !init) return;
 
       // Arrow function with 2 params and conditional body
       if (!t.isArrowFunctionExpression(init)) return;
+
       if (init.params.length !== 2) return;
+
       if (!t.isConditionalExpression(init.body)) return;
 
       const { test } = init.body;
+
       if (!t.isAssignmentExpression(test)) return;
+
       if (!t.isMemberExpression(test.right)) return;
+
       if (!t.isIdentifier(test.right.object, { name: "Symbol" })) return;
 
       replaceBindingReferences(path, id.name, (refPath) => {
         const callPath = refPath.parentPath;
+
         if (
           callPath?.isCallExpression() &&
           callPath.node.callee === refPath.node &&
           callPath.node.arguments.length === 1
         ) {
           const arg = callPath.node.arguments[0];
+
           if (t.isStringLiteral(arg)) {
             callPath.replaceWith(
               t.memberExpression(t.identifier("Symbol"), t.identifier(arg.value)),
@@ -319,16 +346,22 @@ function simplifyDefinePropertyHelpers(path: NodePath<VariableDeclarator>): bool
 
   if (!t.isIdentifier(id) || !t.isArrowFunctionExpression(init) || init.params.length !== 3)
     return false;
+
   if (!t.isConditionalExpression(init.body)) return false;
 
   const { consequent } = init.body;
+
   if (!t.isCallExpression(consequent)) return false;
+
   if (!t.isMemberExpression(consequent.callee)) return false;
+
   if (!t.isIdentifier(consequent.callee.object, { name: "Object" })) return false;
+
   if (!t.isIdentifier(consequent.callee.property, { name: "defineProperty" })) return false;
 
   return replaceBindingReferences(path, id.name, (refPath) => {
     const callPath = refPath.parentPath;
+
     if (
       callPath?.isCallExpression() &&
       callPath.node.callee === refPath.node &&
@@ -348,10 +381,12 @@ function simplifyAssignmentHelpers(path: NodePath<VariableDeclarator>): boolean 
 
   if (!t.isIdentifier(id) || !t.isArrowFunctionExpression(init) || init.params.length !== 3)
     return false;
+
   if (!t.isAssignmentExpression(init.body) || init.body.operator !== "=") return false;
 
   return replaceBindingReferences(path, id.name, (refPath) => {
     const callPath = refPath.parentPath;
+
     if (
       callPath?.isCallExpression() &&
       callPath.node.callee === refPath.node &&
@@ -370,11 +405,14 @@ function replaceObjectAssignPolyfills(path: NodePath<VariableDeclarator>): boole
 
   if (!t.isIdentifier(id) || !t.isArrowFunctionExpression(init) || init.params.length !== 2)
     return false;
+
   if (!t.isBlockStatement(init.body)) return false;
+
   if (!matchesAssignPolyfill(path.get("init") as NodePath)) return false;
 
   const result = replaceBindingReferences(path, id.name, (refPath) => {
     const callPath = refPath.parentPath;
+
     if (callPath?.isCallExpression() && callPath.node.callee === refPath.node) {
       callPath.replaceWith(
         t.callExpression(
@@ -388,6 +426,7 @@ function replaceObjectAssignPolyfills(path: NodePath<VariableDeclarator>): boole
   if (result) {
     log.detail(`Replaced Object.assign polyfill: ${id.name}`);
   }
+
   return result;
 }
 
@@ -398,12 +437,16 @@ function renameAsyncIteratorHelpers(path: NodePath<VariableDeclarator>): boolean
   const { id, init } = path.node;
 
   if (!t.isIdentifier(id)) return false;
+
   if (!t.isArrowFunctionExpression(init) || init.params.length !== 3) return false;
+
   if (!t.isConditionalExpression(init.body)) return false;
+
   if (!hasAsyncIteratorUsage(path)) return false;
 
   log.detail(`Async Iterator: ${id.name} -> getAsyncIterator`);
   path.scope.rename(id.name, "getAsyncIterator");
+
   return true;
 }
 
@@ -416,11 +459,14 @@ function simplifyHelperFunctions(ast: ParseResult<File>): void {
   traverse(ast, {
     VariableDeclarator(path) {
       const { id, init } = path.node;
+
       if (!t.isIdentifier(id) || !init) return;
 
       // Try each helper pattern in order
       if (simplifyDefinePropertyHelpers(path)) return;
+
       if (simplifyAssignmentHelpers(path)) return;
+
       if (replaceObjectAssignPolyfills(path)) return;
       renameAsyncIteratorHelpers(path);
     },

@@ -12,6 +12,7 @@ export function readAst(filePath: string): {
   code: string;
 } {
   const code = fs.readFileSync(filePath, "utf8");
+
   return {
     ast: parser.parse(code, {
       sourceType: "module",

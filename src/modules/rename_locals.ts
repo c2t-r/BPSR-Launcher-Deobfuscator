@@ -33,6 +33,7 @@ export function run(ast: ParseResult<File>): ParseResult<File> {
     // 2. Rename Catch Parameters
     CatchClause(path) {
       const param = path.node.param;
+
       if (param && t.isIdentifier(param)) {
         if (isObfuscated(param.name)) {
           const newName = path.scope.generateUid("err");
@@ -44,8 +45,10 @@ export function run(ast: ParseResult<File>): ParseResult<File> {
     // 3. Rename Loop Variables
     ForStatement(path) {
       const init = path.node.init;
+
       if (t.isVariableDeclaration(init) && init.declarations.length > 0 && init.declarations[0]) {
         const decl = init.declarations[0];
+
         if (t.isIdentifier(decl.id) && isObfuscated(decl.id.name)) {
           // Simple heuristic: normally i
           const newName = path.scope.generateUid("i");
@@ -55,8 +58,10 @@ export function run(ast: ParseResult<File>): ParseResult<File> {
     },
     ForInStatement(path) {
       const left = path.node.left;
+
       if (t.isVariableDeclaration(left) && left.declarations[0]) {
         const decl = left.declarations[0];
+
         if (t.isIdentifier(decl.id) && isObfuscated(decl.id.name)) {
           const newName = path.scope.generateUid("key");
           path.scope.rename(decl.id.name, newName);
@@ -68,8 +73,10 @@ export function run(ast: ParseResult<File>): ParseResult<File> {
     },
     ForOfStatement(path) {
       const left = path.node.left;
+
       if (t.isVariableDeclaration(left) && left.declarations[0]) {
         const decl = left.declarations[0];
+
         if (t.isIdentifier(decl.id) && isObfuscated(decl.id.name)) {
           const newName = path.scope.generateUid("item");
           path.scope.rename(decl.id.name, newName);
@@ -81,6 +88,7 @@ export function run(ast: ParseResult<File>): ParseResult<File> {
     },
   });
 
-  log.info("Done");
+  log.info("Done!");
+
   return ast;
 }
