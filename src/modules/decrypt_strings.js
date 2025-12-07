@@ -1,7 +1,7 @@
-const traverse = require('@babel/traverse').default;
 const generator = require('@babel/generator').default;
-const t = require('@babel/types');
 const parser = require('@babel/parser');
+const traverse = require('@babel/traverse').default;
+const t = require('@babel/types');
 
 /**
  * Stage 1: String Deobfuscation
@@ -91,7 +91,9 @@ function rotateArray(array, target, checksumFunc, decode) {
     while (true) {
         try {
             if (checksumFunc(decode) === target) break;
-        } catch {}
+        } catch {
+            // Rotation failed, try next shift
+        }
         array.push(array.shift());
     }
 }

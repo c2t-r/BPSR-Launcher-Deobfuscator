@@ -1,7 +1,7 @@
 const fs = require('fs');
 
-const parser = require('@babel/parser');
 const generator = require('@babel/generator').default;
+const parser = require('@babel/parser');
 const prettier = require('prettier');
 
 async function readAst(filePath) {

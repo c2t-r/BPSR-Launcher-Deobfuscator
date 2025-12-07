@@ -1,8 +1,6 @@
 const traverse = require('@babel/traverse').default;
 const t = require('@babel/types');
 
-const { readAst, writeAst } = require('../utils/io');
-
 function isObfuscated(name) {
     return /^_[0-9a-zA-Z]+$/.test(name) || /^[a-zA-Z]{1,2}$/.test(name);
 }
