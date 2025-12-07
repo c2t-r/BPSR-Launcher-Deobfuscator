@@ -1,0 +1,26 @@
+{
+  "name": "launcher_source",
+  "version": "1.0.0",
+  "description": "deobfuscate bpsr_launcher",
+  "main": "src/index.js",
+  "scripts": {
+    "lint": "bun x eslint .",
+    "format": "bun x eslint --fix . && bun x oxfmt .",
+    "check": "bun x tsc --noEmit",
+    "deobfuscate": "bun src/index.js"
+  },
+  "author": "c2t-r",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.28.5",
+    "@babel/generator": "^7.28.5",
+    "@babel/parser": "^7.28.5",
+    "@babel/traverse": "^7.28.5",
+    "@babel/types": "^7.28.5",
+    "@eslint/js": "^9.39.1",
+    "@types/bun": "latest",
+    "eslint": "^9.39.1",
+    "eslint-plugin-import-x": "^4.16.1",
+    "oxfmt": "^0.16.0"
+  }
+}
